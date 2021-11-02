@@ -1,0 +1,537 @@
+{
+  "description": "BSD.pw GLOBE API Workshop",
+  "states": [
+    {
+      "name": "Trigger",
+      "type": "trigger",
+      "transitions": [
+        {
+          "next": "Welcome",
+          "event": "incomingMessage"
+        },
+        {
+          "event": "incomingCall"
+        },
+        {
+          "event": "incomingRequest"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    },
+    {
+      "name": "Welcome",
+      "type": "send-and-wait-for-reply",
+      "transitions": [
+        {
+          "next": "CheckTemperatureScale",
+          "event": "incomingMessage"
+        },
+        {
+          "event": "timeout"
+        },
+        {
+          "event": "deliveryFailure"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": -10,
+          "y": 190
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "body": "Greetings from the GLOBE API Workshop. Which scale do you use to denote temperature? Celsius or Farenheit?",
+        "timeout": "3600"
+      }
+    },
+    {
+      "name": "CheckAirTemperature",
+      "type": "split-based-on",
+      "transitions": [
+        {
+          "next": "WrongAirTemperature",
+          "event": "noMatch"
+        },
+        {
+          "next": "DisplayTemperature",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "If value regex ^[-+]?[0-9]+(\\.[0-9]*)?$",
+              "arguments": [
+                "{{widgets.WhatIsTheAirTemperature.inbound.Body}}"
+              ],
+              "type": "regex",
+              "value": "^[-+]?[0-9]+(\\.[0-9]*)?$"
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "input": "{{widgets.WhatIsTheAirTemperature.inbound.Body}}",
+        "offset": {
+          "x": 20,
+          "y": 1080
+        }
+      }
+    },
+    {
+      "name": "WrongAirTemperature",
+      "type": "send-message",
+      "transitions": [
+        {
+          "next": "WhatIsTheAirTemperature",
+          "event": "sent"
+        },
+        {
+          "event": "failed"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": -110,
+          "y": 1280
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "to": "{{contact.channel.address}}",
+        "body": "Sorry, {{widgets.WhatIsTheAirTemperature.inbound.Body}} isn't a valid temperature!"
+      }
+    },
+    {
+      "name": "WhatIsTheAirTemperature",
+      "type": "send-and-wait-for-reply",
+      "transitions": [
+        {
+          "next": "CheckAirTemperature",
+          "event": "incomingMessage"
+        },
+        {
+          "event": "timeout"
+        },
+        {
+          "event": "deliveryFailure"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": 10,
+          "y": 850
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "body": "What is the current Air Temperature in {{widgets.Welcome.inbound.Body}}?",
+        "timeout": "3600"
+      }
+    },
+    {
+      "name": "CheckTemperatureScale",
+      "type": "split-based-on",
+      "transitions": [
+        {
+          "next": "WrongTemperatureScale",
+          "event": "noMatch"
+        },
+        {
+          "next": "WhatIsTheAirTemperature",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "If value matches_any_of celcius,farenheit",
+              "arguments": [
+                "{{widgets.Welcome.inbound.Body}}"
+              ],
+              "type": "matches_any_of",
+              "value": "celsius,celcius,farenheit,c,f,C,F"
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "input": "{{widgets.Welcome.inbound.Body}}",
+        "offset": {
+          "x": -10,
+          "y": 470
+        }
+      }
+    },
+    {
+      "name": "WrongTemperatureScale",
+      "type": "send-message",
+      "transitions": [
+        {
+          "next": "Welcome",
+          "event": "sent"
+        },
+        {
+          "event": "failed"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": -400,
+          "y": 870
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "to": "{{contact.channel.address}}",
+        "body": "Sorry, {{widgets.Welcome.inbound.Body}} isn't a valid temperature scale!"
+      }
+    },
+    {
+      "name": "DisplayTemperature",
+      "type": "send-and-wait-for-reply",
+      "transitions": [
+        {
+          "next": "ConfirmTemperature",
+          "event": "incomingMessage"
+        },
+        {
+          "event": "timeout"
+        },
+        {
+          "event": "deliveryFailure"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": 230,
+          "y": 1300
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "body": "Excellent!, {{widgets.WhatIsTheAirTemperature.inbound.Body}} degrees {{widgets.Welcome.inbound.Body}} is the temperature you recorded. Is this correct?",
+        "timeout": "3600"
+      }
+    },
+    {
+      "name": "GetOrganizationID",
+      "type": "send-and-wait-for-reply",
+      "transitions": [
+        {
+          "next": "CheckOrganizationID",
+          "event": "incomingMessage"
+        },
+        {
+          "event": "timeout"
+        },
+        {
+          "event": "deliveryFailure"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": 300,
+          "y": 1780
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "body": "To submit your data, we'll need a little info from you. First, what is your Organization ID?",
+        "timeout": "3600"
+      }
+    },
+    {
+      "name": "ConfirmTemperature",
+      "type": "split-based-on",
+      "transitions": [
+        {
+          "next": "WrongTemperatureUser",
+          "event": "noMatch"
+        },
+        {
+          "next": "GetOrganizationID",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "If value matches_any_of Y,y,yes,YES",
+              "arguments": [
+                "{{widgets.DisplayTemperature.inbound.Body}}"
+              ],
+              "type": "matches_any_of",
+              "value": "Y,y,yes,YES,yeah"
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "input": "{{widgets.DisplayTemperature.inbound.Body}}",
+        "offset": {
+          "x": 240,
+          "y": 1510
+        }
+      }
+    },
+    {
+      "name": "WrongTemperatureUser",
+      "type": "send-message",
+      "transitions": [
+        {
+          "next": "Welcome",
+          "event": "sent"
+        },
+        {
+          "event": "failed"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": -120,
+          "y": 1530
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "to": "{{contact.channel.address}}",
+        "body": "No worries, lets try that again."
+      }
+    },
+    {
+      "name": "CheckOrganizationID",
+      "type": "split-based-on",
+      "transitions": [
+        {
+          "next": "WrongOrganizationID",
+          "event": "noMatch"
+        },
+        {
+          "next": "GetSiteID",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "If value greater_than 0",
+              "arguments": [
+                "{{widgets.GetOrganizationID.inbound.Body}}"
+              ],
+              "type": "greater_than",
+              "value": "0"
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "input": "{{widgets.GetOrganizationID.inbound.Body}}",
+        "offset": {
+          "x": 310,
+          "y": 2010
+        }
+      }
+    },
+    {
+      "name": "WrongOrganizationID",
+      "type": "send-message",
+      "transitions": [
+        {
+          "next": "GetOrganizationID",
+          "event": "sent"
+        },
+        {
+          "event": "failed"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": -70,
+          "y": 2020
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "to": "{{contact.channel.address}}",
+        "body": "Sorry, {{widgets.GetOrganizationID.inbound.Body}}  is not a valid Organization ID. Please review the FAQ on Organization ID https://www.globe.gov/support/faqs/globe-website-tutorials/school-id#orgid for more information on where to find your Organization ID. Also please note, we're only looking for the number, no need to include ORG_ID:"
+      }
+    },
+    {
+      "name": "GetSiteID",
+      "type": "send-and-wait-for-reply",
+      "transitions": [
+        {
+          "next": "CheckSiteID",
+          "event": "incomingMessage"
+        },
+        {
+          "event": "timeout"
+        },
+        {
+          "event": "deliveryFailure"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": 470,
+          "y": 2250
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "body": "Thanks. What is your SiteID?",
+        "timeout": "3600"
+      }
+    },
+    {
+      "name": "CheckSiteID",
+      "type": "split-based-on",
+      "transitions": [
+        {
+          "next": "WrongSiteID",
+          "event": "noMatch"
+        },
+        {
+          "next": "GetEmail",
+          "event": "match",
+          "conditions": [
+            {
+              "friendly_name": "If value greater_than 0",
+              "arguments": [
+                "{{widgets.GetSiteID.inbound.Body}}"
+              ],
+              "type": "greater_than",
+              "value": "0"
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "input": "{{widgets.GetSiteID.inbound.Body}}",
+        "offset": {
+          "x": 490,
+          "y": 2470
+        }
+      }
+    },
+    {
+      "name": "WrongSiteID",
+      "type": "send-message",
+      "transitions": [
+        {
+          "next": "GetSiteID",
+          "event": "sent"
+        },
+        {
+          "event": "failed"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": 150,
+          "y": 2470
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "to": "{{contact.channel.address}}",
+        "body": "Sorry, {{widgets.GetSiteID.inbound.Body}}  is not a valid Site ID. Please review the FAQ on Site ID https://www.globe.gov/support/faqs/globe-website-tutorials/site-id for more information on where to find your Site ID. Also please note, we're only looking for the number, no need to include SITE_ID:"
+      }
+    },
+    {
+      "name": "SendData",
+      "type": "send-message",
+      "transitions": [
+        {
+          "event": "sent"
+        },
+        {
+          "event": "failed"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": 630,
+          "y": 3420
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "to": "{{contact.channel.address}}",
+        "body": "Ok, thanks for sending in data under the GLOBE user account {{widgets.GetEmail.inbound.Body}}"
+      }
+    },
+    {
+      "name": "ObserversAPI",
+      "type": "make-http-request",
+      "transitions": [
+        {
+          "next": "MeasurementsAPI",
+          "event": "success"
+        },
+        {
+          "event": "failed"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": 630,
+          "y": 2950
+        },
+        "method": "POST",
+        "content_type": "application/json;charset=utf-8",
+        "body": "{\n  \"phone\": \"{{trigger.message.From}}\",\n  \"email\": \"{{widgets.GetEmail.inbound.Body}}\"\n}",
+        "url": "https://globe-api-workshop.lab.bsd.pw/observers/"
+      }
+    },
+    {
+      "name": "GetEmail",
+      "type": "send-and-wait-for-reply",
+      "transitions": [
+        {
+          "next": "ObserversAPI",
+          "event": "incomingMessage"
+        },
+        {
+          "event": "timeout"
+        },
+        {
+          "event": "deliveryFailure"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": 540,
+          "y": 2700
+        },
+        "service": "{{trigger.message.InstanceSid}}",
+        "channel": "{{trigger.message.ChannelSid}}",
+        "from": "{{flow.channel.address}}",
+        "body": "What is the email address associated with your GLOBE user account?",
+        "timeout": "3600"
+      }
+    },
+    {
+      "name": "MeasurementsAPI",
+      "type": "make-http-request",
+      "transitions": [
+        {
+          "next": "SendData",
+          "event": "success"
+        },
+        {
+          "event": "failed"
+        }
+      ],
+      "properties": {
+        "offset": {
+          "x": 620,
+          "y": 3190
+        },
+        "method": "POST",
+        "content_type": "application/json;charset=utf-8",
+        "body": "{\n  \"temperaturescale\": \"{{widgets.Welcome.inbound.Body}}\",\n  \"temperature\": {{widgets.WhatIsTheAirTemperature.inbound.Body}},\n  \"organizationid\": {{widgets.GetOrganizationID.inbound.Body}},\n  \"siteid\": {{widgets.GetSiteID.inbound.Body}},\n  \"observer_id\": {{widgets.ObserversAPI.parsed.id}} \n}",
+        "url": "https://globe-api-workshop.lab.bsd.pw/measurements/"
+      }
+    }
+  ],
+  "initial_state": "Trigger",
+  "flags": {
+    "allow_concurrent_calls": true
+  }
+}

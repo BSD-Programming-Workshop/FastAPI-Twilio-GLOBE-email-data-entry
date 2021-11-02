@@ -1,0 +1,153 @@
+# install the packages needed for the database and setup postgresql
+- name: install postgresql server package and python adapter
+  package: name={{ item }}
+  with_items:
+    - postgresql12-server
+    - py38-psycopg2
+    - py39-sqlite3
+  become: yes
+
+- name: autostart postgresql
+  command: sysrc postgresql_enable=YES
+  become: yes
+
+- name: set postgresql data directory
+  command: sysrc postgresql_data=/usr/local/pgsql/data
+  become: yes
+
+- name: create ZFS dataset for postgresql
+  command: zfs create {{db_zpool}}/pgsql
+  become: yes
+
+- name: set ZFS mountpoint for postgresql
+  command: zfs set mountpoint=/usr/local/pgsql {{db_zpool}}/pgsql
+  become: yes
+
+- name: create ZFS dataset for postgresql data
+  command: zfs create {{db_zpool}}/pgsql/data
+  become: yes
+
+- name: set dataset to be owned by postgres user
+  command: chown postgres:postgres /usr/local/pgsql/data
+  become: yes
+
+- name: initialize postgresql
+  command: /usr/local/etc/rc.d/postgresql oneinitdb
+  become: yes
+
+- name: prepare base directory to setup 8KB block size
+  command: mv base base-old
+  become: yes
+  args:
+    chdir: /usr/local/pgsql/data
+
+- name: prepare pg_wal directory to setup 8KB block size
+  command: mv pg_wal pg_wal-old
+  become: yes
+  args:
+    chdir: /usr/local/pgsql/data
+
+- name: create dataset for base with 8KB block size
+  command: zfs create -o recordsize=8k -o redundant_metadata=most -o primarycache=metadata -o logbias=throughput {{db_zpool}}/pgsql/data/base
+  become: yes
+
+- name: create dataset for pg_wal with 8KB block size
+  command: zfs create -o recordsize=8k -o redundant_metadata=most -o primarycache=metadata -o logbias=throughput {{db_zpool}}/pgsql/data/pg_wal
+  become: yes
+
+- name: set base dataset to be owned by postgres user
+  command: chown postgres:postgres /usr/local/pgsql/data/base
+  become: yes
+
+- name: set pg_wal dataset to be owned by postgres user
+  command: chown postgres:postgres /usr/local/pgsql/data/pg_wal
+  become: yes
+
+- name: copy contents of base-old directory to base dataset
+  shell: cd /usr/local/pgsql/data && cp -Rp base-old/* base
+  become: yes
+
+- name: copy contents of pg_wal-old directory to pg_wal dataset
+  shell: cd /usr/local/pgsql/data && cp -Rp pg_wal-old/* pg_wal
+  become: yes
+
+- name: Cleanup base-old
+  file:
+    dest: /usr/local/pgsql/data/base-old
+    state: absent
+  become: yes
+
+- name: Cleanup pg_wal-old
+  file:
+    dest: /usr/local/pgsql/data/pg_wal-old
+    state: absent
+  become: yes
+
+- name: start postgresql
+  service:
+    name: postgresql
+    state: started
+  become: yes
+
+- name: configure separate postgresql user
+  command: psql -U postgres -c "CREATE ROLE {{ db_user }} PASSWORD '{{ db_password }}' CREATEDB INHERIT LOGIN;"
+
+- name: create password file to be used when the psql connection requires a password
+  template:
+    src: pgpass.passfile
+    dest: /usr/home/{{ username }}/.pgpass
+    mode: '0600'
+
+- name: create database
+  command: psql -U {{ db_user }} -c "CREATE DATABASE {{ db_name }};" postgres
+
+- name: Generate a req.conf to answer the prompts openssl usually asks when generating keys
+  template:
+    src: req.conf
+    dest: /root/req.conf
+  become: yes
+
+- name: Generate server SSL keypair
+  command: openssl req -config /root/req.conf -newkey rsa:2048 -new -x509 -days 3650 -nodes -out server.crt -keyout server.key
+  become: yes
+  args:
+    chdir: /usr/local/pgsql/data
+
+- name: Cleanup req.conf
+  file:
+    dest: /root/req.conf
+    state: absent
+  become: yes
+
+- name: lock down server.key file permissions
+  file:
+    dest: /usr/local/pgsql/data/server.key
+    owner: postgres
+    mode: '0600'
+  become: yes
+
+- name: enable SSL, set host and port in postgresql.conf
+  blockinfile:
+    path: /usr/local/pgsql/data/postgresql.conf
+    block: |
+      # - PostgreSQL Settings - #
+      listen_addresses = '{{ db_host }}'
+      port = {{ db_port }}
+      ssl = on
+
+  become: yes
+
+- name: upload template pg_hba.conf to ensure users provide password when logging in and that they must login over SSL
+  template:
+    src: pg_hba.conf
+    dest: /usr/local/pgsql/data/pg_hba.conf
+    force: yes
+    owner: postgres
+    group: postgres
+  become: yes
+
+- name: restart postgresql
+  service:
+    name: postgresql
+    state: restarted
+  become: yes

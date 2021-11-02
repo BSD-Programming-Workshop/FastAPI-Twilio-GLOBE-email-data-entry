@@ -1,0 +1,9 @@
+# Setup SSH on the server
+- name: disable root SSH logins
+  replace:
+    destfile: /etc/ssh/sshd_config
+    regexp: "^PermitRootLogin without-password"
+    replace: "PermitRootLogin no"
+    backup: no
+  become: yes
+  notify: "Restart SSH"

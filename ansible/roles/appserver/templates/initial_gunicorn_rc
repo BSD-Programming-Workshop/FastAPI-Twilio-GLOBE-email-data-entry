@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# PROVIDE: gunicorn
+# REQUIRE: DAEMON
+# BEFORE: LOGIN
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+name=gunicorn
+desc="gunicorn application server"
+rcvar=gunicorn_enable
+
+command="/home/{{ username }}/{{ project_dir_no_trailing_slash }}/venv/bin/${name}"
+command_interpreter="/usr/home/{{ username }}/{{ project_dir_no_trailing_slash }}/venv/bin/python3.9"
+procname="/home/{{ username }}/{{ project_dir_no_trailing_slash }}/venv/bin/${name}"
+
+pidfile="/var/run/${name}.pid"
+
+start_precmd="${name}_prestart"
+stop_postcmd=stop_postcmd
+sig_stop="INT"
+
+gunicorn_prestart()
+{
+	rc_flags="--daemon --log-file /home/{{ username }}/{{ project_dir_no_trailing_slash }}/gunicorn.log --pid ${pidfile} -u {{ username }} -g {{ username }} --chdir /home/{{ username }}/{{ project_dir_no_trailing_slash }} -w 1 -k uvicorn.workers.UvicornWorker api.main:app"
+}
+
+stop_postcmd()
+{
+	rm -f ${pidfile}
+}
+
+load_rc_config $name
+run_rc_command "$1"

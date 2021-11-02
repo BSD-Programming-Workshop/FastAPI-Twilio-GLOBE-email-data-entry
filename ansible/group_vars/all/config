@@ -1,0 +1,33 @@
+username: freebsd
+local_username: roller
+fqdn: globe-api-workshop.lab.bsd.pw
+domain: "https://{{ fqdn }}"
+project_dir_no_trailing_slash: Projects/globe_api_workshop
+project_name: api
+
+# Twilio config
+twilio_sms_number: "whatsapp:+14155238886"
+
+# SendGrid config
+sendgrid_verified_email: roller@bsd.pw
+
+# Appserver config
+appserver_port: 8000
+
+# DB config
+db_zpool: zroot
+db_name: globe_api_workshop
+db_user: postgresql_admin
+db_host: localhost
+db_port: 5432
+
+# SSL config
+countryName: US
+stateOrProvinceName: Florida
+localityName: Brooksville
+organizationName: BSD Programming Workshop
+commonName: BSD Programming Workshop
+emailAddress: roller@bsd.pw
+
+# Let's Encrypt Email
+lets_encrypt_email: "{{ emailAddress }}"

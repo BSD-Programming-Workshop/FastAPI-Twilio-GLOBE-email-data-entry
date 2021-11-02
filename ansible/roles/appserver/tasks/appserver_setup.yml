@@ -1,0 +1,72 @@
+# install the packages needed for pulling project code from git and setup the appserver
+- name: install git
+  package:
+    name: git-lite
+    state: present
+  become: yes
+
+- name: create deploy key directory
+  file:
+    path: /home/{{ username }}/git_deploy_key
+    state: directory
+
+- name: copy deploy key to remote server
+  copy:
+    src: /home/{{ local_username }}/Downloads/read_only_key
+    dest: /home/{{ username }}/git_deploy_key/read_only_key
+    mode: 0600
+    owner: "{{ username }}"
+    group: "{{ username }}"
+
+- name: latest git code
+  git:
+    repo: ssh://git@github.com/possnfiffer/globe_api_workshop.git
+    dest: /home/{{ username }}/{{ project_dir_no_trailing_slash }}
+    key_file: /home/{{ username }}/git_deploy_key/read_only_key
+    accept_hostkey: yes
+
+- name: setup project virtualenv
+  shell: cd /home/{{ username }}/{{ project_dir_no_trailing_slash }} && python3.9 -m venv venv && venv/bin/pip install -U pip setuptools && venv/bin/pip install -r requirements.txt
+
+- name: copy .env template into place
+  template:
+    src: env-template
+    dest: /home/{{ username }}/{{ project_dir_no_trailing_slash }}/.env
+
+- name: copy initial single worker rc.d gunicorn template into place
+  template:
+    src: initial_gunicorn_rc
+    dest: /usr/local/etc/rc.d/gunicorn
+  become: yes
+
+- name: enable the gunicorn service and allow execution
+  shell: sysrc gunicorn_enable=YES && chmod +x /usr/local/etc/rc.d/gunicorn
+  become: yes
+
+- name: start gunicorn
+  service:
+    name: gunicorn
+    state: started
+  become: yes
+
+- name: stop gunicorn
+  service:
+    name: gunicorn
+    state: stopped
+  become: yes
+
+- name: copy multiple worker rc.d gunicorn template into place
+  template:
+    src: gunicorn_rc
+    dest: /usr/local/etc/rc.d/gunicorn
+  become: yes
+
+- name: allow execution of the gunicorn service
+  command: chmod +x /usr/local/etc/rc.d/gunicorn
+  become: yes
+
+- name: start gunicorn
+  service:
+    name: gunicorn
+    state: started
+  become: yes

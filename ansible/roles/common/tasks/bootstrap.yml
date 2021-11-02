@@ -1,0 +1,5 @@
+# bootstrap Python
+- name: Bootstrap Python 
+  raw: sudo pkg install -y python39
+  become: yes
+  changed_when: False

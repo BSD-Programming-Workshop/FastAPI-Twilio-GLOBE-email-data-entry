@@ -1,0 +1,78 @@
+# install and configure the webserver
+- name: install nginx server package and Let's Encrypt utility certbot
+  package: name={{ item }}
+  with_items:
+    - nginx
+    - py38-certbot
+  become: yes
+
+- name: autostart Nginx
+  command: sysrc nginx_enable=YES
+  become: yes
+
+- name: enable and setup IPFW Firewall
+  shell: sysrc firewall_enable=YES && sysrc firewall_type=workstation && sysrc firewall_myservices="22/tcp 80/tcp 443/tcp" && sysrc firewall_allowservices=any
+  become: yes
+
+- name: create directory structure
+  file:
+    path: /usr/local/www/{{ fqdn }}
+    state: directory
+    mode: '0755'
+    owner: www
+    group: www
+  become: yes
+
+- name: Let's Encrypt certificate
+  shell: certbot certonly --standalone -d {{ fqdn }} -m {{ lets_encrypt_email }} --agree-tos -n
+  become: yes
+
+- name: Load httpready dataready modules for nginx
+  command: kldload accf_data accf_http
+  become: yes
+
+- name: Add httpready dataready modules for nginx to loader so they're enabled at boot time
+  blockinfile:
+    path: /boot/loader.conf.local
+    block: |
+      accf_data_load="YES"
+      accf_http_load="YES"
+  become: yes
+
+- name: write custom Nginx configuration
+  template:
+    src: nginx.conf
+    dest: /usr/local/etc/nginx/nginx.conf
+  become: yes
+
+- name: validate Nginx configuration
+  command: nginx -t
+  become: yes
+
+- name: create directory for dhparam.pem
+  file:
+    path: /etc/ssl/certs
+    state: directory
+    mode: '0755'
+  become: yes
+
+- name: create dhparam.pem
+  shell: openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
+  become: yes
+
+- name: start Nginx
+  service:
+    name: nginx
+    state: started
+  become: yes
+
+- name: decrease boot delay time
+  lineinfile:
+    path: /boot/loader.conf.local
+    search_string: 'autoboot_delay="30"'
+    line: autoboot_delay="2"
+  become: yes
+
+- name: reboot FreeBSD
+  command: init 6
+  become: yes

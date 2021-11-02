@@ -1,0 +1,6 @@
+# include other YAML files with tasks here
+- include: bootstrap.yml
+- include: freebsd_update.yml
+- include: python_config.yml
+# SSH Config is specific to Digital Ocean which allows root login
+#- include: ssh_config.yml

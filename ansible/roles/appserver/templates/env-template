@@ -1,0 +1,9 @@
+DATABASE_URL = postgresql+psycopg2://{{ db_user }}:{{ db_password }}@{{ db_host }}:{{ db_port }}/{{ db_name }}?sslmode=require
+DEBUG = False
+DEV_MODE = False
+DOMAIN = {{ domain }}
+SENDGRID_SECRET_KEY = {{ sendgrid_secret_key }}
+SENDGRID_VERIFIED_EMAIL = {{ sendgrid_verified_email }}
+TWILIO_ACCOUNT_SID = {{ twilio_account_sid }}
+TWILIO_AUTH_TOKEN = {{ twilio_auth_token }}
+TWILIO_SMS_NUMBER = {{ twilio_sms_number }}

@@ -1,0 +1,8 @@
+# setup Python
+- name: Ensure Python Pip is available
+  command: python3.9 -m ensurepip
+  become: yes
+
+- name: Upgrade Pip
+  command: pip3.9 install -U pip setuptools
+  become: yes

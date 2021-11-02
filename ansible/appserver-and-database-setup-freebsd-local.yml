@@ -1,0 +1,11 @@
+# high level instructions for which tasks apply to which hosts
+- name: apply local configuration to servers listed in hosts
+  gather_facts: false
+  become_method: su
+  hosts: all
+  connection: local
+  roles:
+    - common
+    - database
+    - appserver
+    - webserver

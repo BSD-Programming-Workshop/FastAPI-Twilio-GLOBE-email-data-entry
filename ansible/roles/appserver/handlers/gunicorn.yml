@@ -1,0 +1,6 @@
+- name: restart gunicorn service
+  service:
+    name: gunicorn
+    state: restarted
+  become: yes
+  listen: "Restart gunicorn"

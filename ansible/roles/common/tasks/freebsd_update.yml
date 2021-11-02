@@ -1,0 +1,4 @@
+# update FreeBSD
+- name: FreeBSD updates for system and packages
+  shell: freebsd-update --not-running-from-cron fetch install && pkg update && pkg upgrade -y
+  become: yes
