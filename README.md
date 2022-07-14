@@ -46,10 +46,13 @@ We'll be using SendGrid to email the measurement data to the GLOBE Email Data En
 #### FreeBSD Development Environment
 The following commands expect that you're running FreeBSD as your Operating System. No worries, as the name implies, the Operating System is free and there are instructions I've written up for you to get started with this wonderful Open Source Operating System, FreeBSD. For information on how to setup your own FreeBSD system as a virtual machine running on your existing computer in a program called VirtualBox, see the step-by-step [BSD.pw Workshop, Getting Started with FreeBSD](https://github.com/possnfiffer/bsd-pw/blob/gh-pages/docs/Intro_to_FreeBSD_Workshop.md) No need to follow the entire guide as there are extras in there. Feel free to stop when you get to the Jails section.
 
-We'll use Ansible to automate the install and configuration of our database and git to clone the project repository. Open up the terminal you installed in the BSD Workshop guide called `sakura` then type the following and enter your password when prompted:
+We'll use Ansible to automate the install and configuration of our database, appserver, webserver, and operating system. We will use `git` to clone the project repository. Open up the terminal you installed in the BSD Workshop guide called `sakura` then type the following and enter your password when prompted:
 ```
 sudo pkg install -y py38-ansible git-lite
 ```
+
+## UPDATE: Digital Ocean Droplet Support for FreeBSD has degraded
+#### You can still use FreeBSD on Digital Ocean, you just have to upload an image manually now and configure it yourself. I'll make a guide for this and put it on my YouTube channel, keep an eye on [BSD.pw](http://BSD.pw) for updates.
 
 Create an SSH keypair to use with Digital Ocean, the online cloud provider we'll use to create a remote FreeBSD machine that will host our PostgreSQL database, Python appserver, Nginx webserver, and DNS nameservers.
 
@@ -124,7 +127,7 @@ Now go back to Digital Ocean
 10. Enter in the FQDN for the hostname you want for your project e.g. globe-api-workshop.lab (no need to include the .bsd.pw part of the domain, you'll see that it gets added to the end automatically)
 11. In next field called `Will Redirect To` select your FreeBSD Droplet from the dropdown menu and finsh with the Create Record button. If you don't see your droplet automatically appear in this menu, check that you created the droplet within your Project or try creating the Droplet again from the Project page using the Create a Droplet link
 12. You should now see the A record in your DNS settings sending the hostname you entered to the droplet you created, use the copy button next to the droplet IP address that appears when you mouse over the droplet information to copy the droplet IP.
-13. Edit your `ansible/hosts` file and include the droplet IP address under each section. Feel free to sue the FQDN of your host rather than the IP, so globe-api-workshop.lab.bsd.pw would work in place of an IP address
+13. Edit your `ansible/hosts` file and include the droplet IP address under each section. Feel free to use the FQDN of your host rather than the IP, so globe-api-workshop.lab.bsd.pw would work in place of an IP address
 
 ```
 vim ansible/hosts
